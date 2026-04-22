@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:postgres@localhost:5432/sekolah?schema=public"
+}
+
+model Siswa {
+  id        Int      @id @default(autoincrement())
+  alamat    String   @unique
+  nis       String
+  nama      String
+  aktif     Boolean  @default(true)
+  nilai     Nilai[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Nilai {
+  id          String   @id @default(uuid())
+  idNilai     String   @unique
+  alamatSiswa String
+  siswa       Siswa    @relation(fields: [alamatSiswa], references: [alamat])
+  mapel       String
+  nilaiAngka  Int
+  predikat    String
+  timestamp   Int
+  createdAt   DateTime @default(now())
+}

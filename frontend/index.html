@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sekolah Hybrid Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        button { margin: 5px; padding: 8px 16px; cursor: pointer; }
+        input { margin: 5px; padding: 6px; width: 350px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .section { border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🏫 Sistem Verifikasi Nilai Rapor (Hybrid)</h1>
+    
+    <div>
+        <button id="connectBtn">🔌 Hubungkan MetaMask</button>
+        <span id="accountDisplay">Belum terhubung</span>
+    </div>
+
+    <div class="section">
+        <h2>👑 Admin</h2>
+        <h3>Tambah Guru</h3>
+        <input type="text" id="guruAddr" placeholder="Alamat wallet guru (0x...)" size="45">
+        <button id="tambahGuruBtn">Tambah Guru</button>
+
+        <h3>Tambah Siswa</h3>
+        <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa"><br>
+        <input type="text" id="siswaNIS" placeholder="NIS"><br>
+        <input type="text" id="siswaNama" placeholder="Nama lengkap"><br>
+        <button id="tambahSiswaBtn">Tambah Siswa</button>
+    </div>
+
+    <div class="section">
+        <h2>👨‍🏫 Guru</h2>
+        <h3>Input Nilai</h3>
+        <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa"><br>
+        <input type="text" id="mapel" placeholder="Mata Pelajaran"><br>
+        <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100"><br>
+        <button id="inputNilaiBtn">Input Nilai</button>
+    </div>
+
+    <div class="section">
+        <h2>🔍 Lihat Data Siswa (Publik)</h2>
+        <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
+        <button id="cariBtn">Cari & Verifikasi</button>
+        <pre id="hasilCari"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+        let account = null;
+
+        async function connectWallet() {
+            if (!window.ethereum) return alert('MetaMask tidak terdeteksi!');
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                document.getElementById('accountDisplay').innerText = `👤 ${account}`;
+                
+                // Cek jaringan
+                const chainId = await ethereum.request({ method: 'eth_chainId' });
+                if (chainId !== '0x539') { // 1337 in hex
+                    alert('Harap ganti jaringan ke Hardhat Local (Chain ID 1337)');
+                }
+            } catch (err) {
+                alert('Gagal konek: ' + err.message);
+            }
+        }
+
+        async function apiCall(method, endpoint, data = null) {
+            const options = {
+                method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-address': account || ''
+                }
+            };
+            if (data) options.body = JSON.stringify(data);
+            const response = await fetch(`${API_URL}${endpoint}`, options);
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Request gagal');
+            return result;
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connectWallet);
+
+        document.getElementById('tambahGuruBtn').addEventListener('click', async () => {
+            const alamat = document.getElementById('guruAddr').value;
+            if (!alamat) return alert('Masukkan alamat guru');
+            try {
+                const res = await apiCall('POST', '/api/guru', { alamat });
+                alert(`✅ Guru ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
+        document.getElementById('tambahSiswaBtn').addEventListener('click', async () => {
+            const alamat = document.getElementById('siswaAddr').value;
+            const nis = document.getElementById('siswaNIS').value;
+            const nama = document.getElementById('siswaNama').value;
+            if (!alamat || !nis || !nama) return alert('Lengkapi semua field');
+            try {
+                const res = await apiCall('POST', '/api/siswa', { alamat, nis, nama });
+                alert(`✅ Siswa ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
+        document.getElementById('inputNilaiBtn').addEventListener('click', async () => {
+            const alamatSiswa = document.getElementById('nilaiSiswaAddr').value;
+            const mapel = document.getElementById('mapel').value;
+            const nilaiAngka = parseInt(document.getElementById('nilaiAngka').value);
+            if (!alamatSiswa || !mapel || isNaN(nilaiAngka)) return alert('Lengkapi semua field');
+            try {
+                const res = await apiCall('POST', '/api/nilai', { alamatSiswa, mapel, nilaiAngka });
+                alert(`✅ Nilai ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
+        document.getElementById('cariBtn').addEventListener('click', async () => {
+            const alamat = document.getElementById('cariAlamat').value;
+            if (!alamat) return alert('Masukkan alamat siswa');
+            try {
+                const res = await apiCall('GET', `/api/siswa/${alamat}`);
+                let output = `=== DATA SISWA ===\n`;
+                output += `Alamat : ${res.siswa.alamat}\n`;
+                output += `NIS    : ${res.siswa.nis}\n`;
+                output += `Nama   : ${res.siswa.nama}\n`;
+                output += `Aktif  : ${res.siswa.aktif}\n`;
+                output += `🔒 Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
+                output += `=== DAFTAR NILAI ===\n`;
+                if (res.nilai.length === 0) {
+                    output += '(Belum ada nilai)\n';
+                } else {
+                    res.nilai.forEach((n, i) => {
+                        output += `${i+1}. ${n.mapel} : ${n.nilaiAngka} (${n.predikat}) - ${new Date(n.timestamp*1000).toLocaleString()}\n`;
+                        output += `   🔒 Verifikasi: ${n.isValid ? '✅' : '❌'}\n`;
+                    });
+                }
+                document.getElementById('hasilCari').innerText = output;
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
