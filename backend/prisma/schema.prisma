@@ -7,18 +7,43 @@ datasource db {
   url      = "postgresql://postgres:postgres@localhost:5432/sekolah?schema=public"
 }
 
-model Siswa {
+model Institusi {
   id        Int      @id @default(autoincrement())
-  alamat    String   @unique
-  nis       String
-  nama      String
-  aktif     Boolean  @default(true)
-  nilai     Nilai[]
+  nama      String   @unique
+  alamat    String?
+  siswa     Siswa[]
+  guru      Guru[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model Siswa {
+  id           Int       @id @default(autoincrement())
+  alamat       String    @unique
+  nis          String
+  nama         String
+  aktif        Boolean   @default(true)
+  institusiId  Int
+  institusi    Institusi @relation(fields: [institusiId], references: [id])
+  nilai        Nilai[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Guru {
+  id           Int       @id @default(autoincrement())
+  alamat       String    @unique  // alamat wallet
+  nip          String    @unique
+  nama         String
+  institusiId  Int
+  institusi    Institusi @relation(fields: [institusiId], references: [id])
+  mataPelajaran String[] // array string, bisa juga bikin tabel terpisah
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
 model Nilai {
+  // tetap seperti sebelumnya
   id          String   @id @default(uuid())
   idNilai     String   @unique
   alamatSiswa String

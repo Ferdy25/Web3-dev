@@ -3,50 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sekolah Hybrid Final</title>
+    <title>Sekolah Hybrid - Lengkap</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        body { font-family: Arial; max-width: 900px; margin: 20px auto; padding: 0 20px; }
         button { margin: 5px; padding: 8px 16px; cursor: pointer; }
         input { margin: 5px; padding: 6px; width: 350px; }
-        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }
-        .section { border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        pre { background: #f7f3f3; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .section { border: 1px solid #070707; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        .inline { display: flex; align-items: center; gap: 10px; }
     </style>
 </head>
 <body>
-    <h1>🏫 Sistem Verifikasi Nilai Rapor (Hybrid)</h1>
+    <h1>🏫 Sistem Verifikasi Nilai Rapor Berbasis Blockchain</h1>
     
-    <div>
-        <button id="connectBtn">🔌 Hubungkan MetaMask</button>
+    <div class="inline">
+        <button id="connectBtn" style="background:#0ba1b8; color:white;">🔌 Hubungkan MetaMask</button>
+        <button id="disconnectBtn" style="background:#05434e; color:white;">🔓 Putuskan Wallet</button>
         <span id="accountDisplay">Belum terhubung</span>
     </div>
 
+    <!-- Admin Section -->
     <div class="section">
         <h2>👑 Admin</h2>
-        <h3>Tambah Guru</h3>
-        <input type="text" id="guruAddr" placeholder="Alamat wallet guru (0x...)" size="45">
-        <button id="tambahGuruBtn">Tambah Guru</button>
+        
+        <h3>🏛️ Tambah Sekolah</h3>
+        <input type="text" id="namaInstitusi" placeholder="Nama Institusi">
+        <input type="text" id="alamatInstitusi" placeholder="Alamat (opsional)">
+        <button id="tambahInstitusiBtn" style="background:#05434e; color:white;">Tambah Institusi</button>
 
-        <h3>Tambah Siswa</h3>
-        <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa"><br>
-        <input type="text" id="siswaNIS" placeholder="NIS"><br>
-        <input type="text" id="siswaNama" placeholder="Nama lengkap"><br>
-        <button id="tambahSiswaBtn">Tambah Siswa</button>
+        <h3>👨‍🏫 Tambah Guru </h3>
+        <input type="text" id="guruAddrFull" placeholder="Alamat Wallet Guru (0x...)">
+        <input type="text" id="guruNIP" placeholder="NIP">
+        <input type="text" id="guruNama" placeholder="Nama Lengkap">
+        <input type="number" id="guruInstitusiId" placeholder="ID Institusi">
+        <input type="text" id="guruMapel" placeholder="Mata Pelajaran ">
+        <button id="tambahGuruFullBtn" style="background:#05434e; color:white;">Tambah Guru</button>
+
+        <h3>🧑‍🎓 Tambah Siswa</h3>
+        <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa">
+        <input type="text" id="siswaNIS" placeholder="NIS">
+        <input type="text" id="siswaNama" placeholder="Nama lengkap">
+        <input type="number" id="siswaInstitusiId" placeholder="ID Institusi">
+        <button id="tambahSiswaBtn" style="background:#05434e; color:white;">Tambah Siswa</button>
     </div>
 
+    <!-- Guru Section -->
     <div class="section">
         <h2>👨‍🏫 Guru</h2>
-        <h3>Input Nilai</h3>
-        <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa"><br>
-        <input type="text" id="mapel" placeholder="Mata Pelajaran"><br>
-        <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100"><br>
-        <button id="inputNilaiBtn">Input Nilai</button>
+        <h3>📝 Input Nilai</h3>
+        <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa">
+        <input type="text" id="mapel" placeholder="Mata Pelajaran">
+        <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100">
+        <button id="inputNilaiBtn" style="background:#05434e; color:white;">Input Nilai</button>
     </div>
 
+    <!-- Public Section -->
     <div class="section">
         <h2>🔍 Lihat Data Siswa (Publik)</h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
-        <button id="cariBtn">Cari & Verifikasi</button>
+        <button id="cariBtn" style="background:#e73636; color:white;">Cari & Verifikasi</button>
         <pre id="hasilCari"></pre>
     </div>
 
@@ -54,16 +70,35 @@
         const API_URL = 'http://localhost:3001';
         let account = null;
 
+        // ========== HELPER FUNCTIONS ==========
+        function capitalizeWords(str) {
+            return str.replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        // Validasi alamat Ethereum
+        function isValidEthereumAddress(address) {
+            return /^0x[a-fA-F0-9]{40}$/.test(address);
+        }
+
+        // Mapel auto-capitalize
+        document.getElementById('mapel').addEventListener('input', function() {
+            this.value = capitalizeWords(this.value);
+        });
+        document.getElementById('guruMapel').addEventListener('input', function() {
+            let val = this.value;
+            let parts = val.split(',').map(p => capitalizeWords(p.trim()));
+            this.value = parts.join(', ');
+        });
+
+        // ========== WALLET CONNECTION ==========
         async function connectWallet() {
             if (!window.ethereum) return alert('MetaMask tidak terdeteksi!');
             try {
                 const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
                 account = accounts[0];
                 document.getElementById('accountDisplay').innerText = `👤 ${account}`;
-                
-                // Cek jaringan
                 const chainId = await ethereum.request({ method: 'eth_chainId' });
-                if (chainId !== '0x539') { // 1337 in hex
+                if (chainId !== '0x539') {
                     alert('Harap ganti jaringan ke Hardhat Local (Chain ID 1337)');
                 }
             } catch (err) {
@@ -71,6 +106,22 @@
             }
         }
 
+        function disconnectWallet() {
+    
+        account = null;
+        document.getElementById('accountDisplay').innerText = 'Belum terhubung';
+
+        if (window.ethereum && window.ethereum.removeAllListeners) {
+            window.ethereum.removeAllListeners();
+        }
+  
+            alert('✅ Status wallet telah direset di aplikasi.\n Untuk memutus koneksi sepenuhnya, buka MetaMask -> Settings -> Connected Sites -> Putuskan situs ini.');
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connectWallet);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+
+        // ========== API CALL ==========
         async function apiCall(method, endpoint, data = null) {
             const options = {
                 method,
@@ -86,37 +137,79 @@
             return result;
         }
 
-        document.getElementById('connectBtn').addEventListener('click', connectWallet);
-
-        document.getElementById('tambahGuruBtn').addEventListener('click', async () => {
-            const alamat = document.getElementById('guruAddr').value;
-            if (!alamat) return alert('Masukkan alamat guru');
+        // ========== ADMIN: INSTITUSI ==========
+        document.getElementById('tambahInstitusiBtn').addEventListener('click', async () => {
+            const nama = document.getElementById('namaInstitusi').value.trim();
+            const alamat = document.getElementById('alamatInstitusi').value.trim();
+            if (!nama) return alert('Nama institusi wajib diisi');
             try {
-                const res = await apiCall('POST', '/api/guru', { alamat });
+                const res = await apiCall('POST', '/api/institusi', { nama, alamat });
+                alert(`✅ Institusi ditambahkan! ID: ${res.institusiId}, Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
+        // ========== ADMIN: GURU LENGKAP ==========
+        document.getElementById('tambahGuruFullBtn').addEventListener('click', async () => {
+            const alamatWallet = document.getElementById('guruAddrFull').value.trim();
+            const nip = document.getElementById('guruNIP').value.trim();
+            const nama = document.getElementById('guruNama').value.trim();
+            const institusiId = parseInt(document.getElementById('guruInstitusiId').value);
+            const mapelRaw = document.getElementById('guruMapel').value.trim();
+            
+            if (!alamatWallet || !nip || !nama || !institusiId || !mapelRaw) {
+                return alert('Lengkapi semua field');
+            }
+            if (!isValidEthereumAddress(alamatWallet)) {
+                return alert('Alamat wallet tidak valid! Gunakan format 0x diikuti 40 karakter heksa.');
+            }
+            
+            const mapel = mapelRaw.split(',').map(m => m.trim()).filter(m => m !== '');
+            if (mapel.length === 0) return alert('Minimal satu mata pelajaran');
+            
+            try {
+                const res = await apiCall('POST', '/api/guru-lengkap', {
+                    alamatWallet, nip, nama, institusiId, mapel
+                });
                 alert(`✅ Guru ditambahkan! Tx: ${res.txHash}`);
             } catch (err) {
                 alert('❌ Gagal: ' + err.message);
             }
         });
 
+        // ========== ADMIN: TAMBAH SISWA ==========
         document.getElementById('tambahSiswaBtn').addEventListener('click', async () => {
-            const alamat = document.getElementById('siswaAddr').value;
-            const nis = document.getElementById('siswaNIS').value;
-            const nama = document.getElementById('siswaNama').value;
-            if (!alamat || !nis || !nama) return alert('Lengkapi semua field');
+            const alamat = document.getElementById('siswaAddr').value.trim();
+            const nis = document.getElementById('siswaNIS').value.trim();
+            const nama = document.getElementById('siswaNama').value.trim();
+            const institusiId = parseInt(document.getElementById('siswaInstitusiId').value);
+            
+            if (!alamat || !nis || !nama || !institusiId) return alert('Lengkapi semua field');
+            if (!isValidEthereumAddress(alamat)) {
+                return alert('Alamat wallet siswa tidak valid!');
+            }
+            
             try {
-                const res = await apiCall('POST', '/api/siswa', { alamat, nis, nama });
+                const res = await apiCall('POST', '/api/siswa', { alamat, nis, nama, institusiId });
                 alert(`✅ Siswa ditambahkan! Tx: ${res.txHash}`);
             } catch (err) {
                 alert('❌ Gagal: ' + err.message);
             }
         });
 
+        // ========== GURU: INPUT NILAI ==========
         document.getElementById('inputNilaiBtn').addEventListener('click', async () => {
-            const alamatSiswa = document.getElementById('nilaiSiswaAddr').value;
-            const mapel = document.getElementById('mapel').value;
+            const alamatSiswa = document.getElementById('nilaiSiswaAddr').value.trim();
+            const mapel = document.getElementById('mapel').value.trim();
             const nilaiAngka = parseInt(document.getElementById('nilaiAngka').value);
+            
             if (!alamatSiswa || !mapel || isNaN(nilaiAngka)) return alert('Lengkapi semua field');
+            if (nilaiAngka < 0 || nilaiAngka > 100) return alert('Nilai harus 0-100');
+            if (!isValidEthereumAddress(alamatSiswa)) {
+                return alert('Alamat siswa tidak valid!');
+            }
+            
             try {
                 const res = await apiCall('POST', '/api/nilai', { alamatSiswa, mapel, nilaiAngka });
                 alert(`✅ Nilai ditambahkan! Tx: ${res.txHash}`);
@@ -125,16 +218,20 @@
             }
         });
 
+        // ========== PUBLIK: CARI SISWA ==========
         document.getElementById('cariBtn').addEventListener('click', async () => {
-            const alamat = document.getElementById('cariAlamat').value;
+            const alamat = document.getElementById('cariAlamat').value.trim();
             if (!alamat) return alert('Masukkan alamat siswa');
+            if (!isValidEthereumAddress(alamat)) {
+                return alert('Format alamat tidak valid!');
+            }
             try {
                 const res = await apiCall('GET', `/api/siswa/${alamat}`);
                 let output = `=== DATA SISWA ===\n`;
-                output += `Alamat : ${res.siswa.alamat}\n`;
-                output += `NIS    : ${res.siswa.nis}\n`;
-                output += `Nama   : ${res.siswa.nama}\n`;
-                output += `Aktif  : ${res.siswa.aktif}\n`;
+                output += `Alamat    : ${res.siswa.alamat}\n`;
+                output += `NIS       : ${res.siswa.nis}\n`;
+                output += `Nama      : ${res.siswa.nama}\n`;
+                output += `Institusi : ${res.siswa.institusi || '-'}\n`;
                 output += `🔒 Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
                 output += `=== DAFTAR NILAI ===\n`;
                 if (res.nilai.length === 0) {
