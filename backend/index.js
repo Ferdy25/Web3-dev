@@ -13,9 +13,10 @@ app.use(express.json());
 
 // ----- KONEKSI BLOCKCHAIN (ethers v5) -----
 const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
-const CONTRACT_ADDRESS = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
-// ABI lengkap (copy dari file JSON hasil compile) - PASTIKAN LENGKAP
+const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+
+// ABI LENGKAP (copy dari file JSON setelah compile kontrak baru)
 const CONTRACT_ABI = [
   "function admin() view returns (address)",
   "function isGuru(address) view returns (bool)",
@@ -24,66 +25,139 @@ const CONTRACT_ABI = [
   "function simpanHashNilai(bytes32, address) external",
   "function verifikasiHashSiswa(address, bytes32) view returns (bool)",
   "function verifikasiHashNilai(bytes32) view returns (bool)",
-  "function hashSiswa(address) view returns (bytes32)",
-  "event GuruDitambahkan(address indexed)",
-  "event SiswaHashDisimpan(address indexed, bytes32)",
-  "event NilaiHashDisimpan(bytes32 indexed, address indexed)"
+  "function tambahInstitusi(string, string) external returns (uint256)",
+  "function simpanHashGuru(address, string, string, uint256, string) external",
+  "function verifikasiHashInstitusi(uint256, bytes32) view returns (bool)",
+  "function verifikasiHashGuru(address, bytes32) view returns (bool)",
+  "event InstitusiDitambahkan(uint256 indexed id, bytes32 hashData)",
+  "event GuruHashDisimpan(address indexed guru, bytes32 hashData)",
+  "event GuruDitambahkan(address indexed guru)",
+  "event SiswaHashDisimpan(address indexed siswa, bytes32 hashData)",
+  "event NilaiHashDisimpan(bytes32 indexed idNilai, address indexed siswa)"
 ];
 
 const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 
+// Signer (admin)
 const getSigner = () => {
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error('PRIVATE_KEY tidak di-set di .env');
   return new ethers.Wallet(privateKey, provider);
 };
 
+// Fungsi hash data
 const hashData = (dataString) => {
   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(dataString));
 };
 
-// ----- MIDDLEWARE: Cek alamat pengirim dari header -----
-const getUserAddress = (req) => {
-  return req.headers['x-user-address'];
+// Normalisasi alamat Ethereum (checksum)
+function normalizeAddress(addr) {
+  try {
+    return ethers.utils.getAddress(addr);
+  } catch {
+    throw new Error('Format alamat Ethereum tidak valid');
+  }
+}
+
+// Ambil alamat user dari header
+const getUserAddress = (req) => req.headers['x-user-address'];
+
+// Cek apakah user adalah admin
+const isAdmin = (userAddr) => {
+  if (!userAddr) return false;
+  return userAddr.toLowerCase() === process.env.ADMIN_ADDRESS?.toLowerCase();
 };
 
 // ----- API ENDPOINTS -----
 
-// 1. Tambah Guru (Admin only)
-app.post('/api/guru', async (req, res) => {
+// ** INSTITUSI **
+app.post('/api/institusi', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
-    if (!userAddr) return res.status(400).json({ error: 'Header x-user-address diperlukan' });
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
 
-    const adminAddr = process.env.ADMIN_ADDRESS;
-    if (userAddr.toLowerCase() !== adminAddr.toLowerCase()) {
-      return res.status(403).json({ error: 'Hanya admin yang bisa menambah guru' });
-    }
+    const { nama, alamat } = req.body;
+    const institusi = await prisma.institusi.create({ data: { nama, alamat } });
 
-    const { alamat } = req.body;
+    const dataString = `${nama}:${alamat || ''}`;
+    const hash = hashData(dataString);
     const signer = getSigner();
     const contractWithSigner = contract.connect(signer);
-    const tx = await contractWithSigner.tambahGuru(alamat);
-    await tx.wait();
-    res.json({ success: true, txHash: tx.hash });
+    const tx = await contractWithSigner.tambahInstitusi(nama, alamat || '');
+    const receipt = await tx.wait();
+    const event = receipt.events?.find(e => e.event === 'InstitusiDitambahkan');
+    const institusiId = event?.args?.id.toNumber();
+
+    res.json({ success: true, institusi, institusiId, txHash: tx.hash });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 2. Tambah Siswa (Admin only)
+app.get('/api/institusi', async (req, res) => {
+  try {
+    const institusi = await prisma.institusi.findMany();
+    res.json(institusi);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ** GURU LENGKAP **
+app.post('/api/guru-lengkap', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
+
+    let { alamatWallet, nip, nama, institusiId, mapel } = req.body;
+    // Normalisasi alamat
+    alamatWallet = normalizeAddress(alamatWallet);
+
+    const guru = await prisma.guru.create({
+      data: { alamat: alamatWallet, nip, nama, institusiId, mataPelajaran: mapel }
+    });
+
+    // Gabungkan mapel menjadi string dengan koma
+    const mapelStr = mapel.join(',');
+    const dataString = `${nip}:${nama}:${institusiId}:${mapelStr}`;
+    const hash = hashData(dataString);
+    const signer = getSigner();
+    const contractWithSigner = contract.connect(signer);
+    // Kirim mapelStr sebagai string, bukan array
+    const tx = await contractWithSigner.simpanHashGuru(alamatWallet, nip, nama, institusiId, mapelStr);
+    await tx.wait();
+
+    res.json({ success: true, guru, txHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/guru/:alamat', async (req, res) => {
+  try {
+    const alamat = normalizeAddress(req.params.alamat);
+    const guru = await prisma.guru.findUnique({ where: { alamat } });
+    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
+    res.json(guru);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ** SISWA (dengan institusi) **
 app.post('/api/siswa', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
-    const adminAddr = process.env.ADMIN_ADDRESS;
-    if (userAddr.toLowerCase() !== adminAddr.toLowerCase()) {
-      return res.status(403).json({ error: 'Hanya admin yang bisa menambah siswa' });
-    }
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
 
-    const { alamat, nis, nama } = req.body;
-    const siswa = await prisma.siswa.create({ data: { alamat, nis, nama } });
+    let { alamat, nis, nama, institusiId } = req.body;
+    alamat = normalizeAddress(alamat);
 
-    const dataString = `${alamat}:${nis}:${nama}`;
+    const siswa = await prisma.siswa.create({
+      data: { alamat, nis, nama, institusiId }
+    });
+
+    const dataString = `${alamat}:${nis}:${nama}:${institusiId}`;
     const hash = hashData(dataString);
     const signer = getSigner();
     const contractWithSigner = contract.connect(signer);
@@ -96,28 +170,39 @@ app.post('/api/siswa', async (req, res) => {
   }
 });
 
-// 3. Input Nilai (Guru only)
+// ** INPUT NILAI (dengan cek mapel & institusi) **
 app.post('/api/nilai', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
     if (!userAddr) return res.status(400).json({ error: 'Header x-user-address diperlukan' });
 
-    // Cek apakah user adalah guru atau admin
-    const isGuru = await contract.isGuru(userAddr);
-    const adminAddr = process.env.ADMIN_ADDRESS;
-    if (!isGuru && userAddr.toLowerCase() !== adminAddr.toLowerCase()) {
+    const isGuruOnChain = await contract.isGuru(userAddr);
+    if (!isGuruOnChain && !isAdmin(userAddr)) {
       return res.status(403).json({ error: 'Hanya guru yang bisa input nilai' });
     }
 
-    const { alamatSiswa, mapel, nilaiAngka } = req.body;
+    let { alamatSiswa, mapel, nilaiAngka } = req.body;
+    alamatSiswa = normalizeAddress(alamatSiswa);
+
+    // Ambil data guru dari DB
+    const guru = await prisma.guru.findFirst({
+      where: { alamat: { equals: userAddr, mode: 'insensitive' } }
+    });
+    if (!guru) return res.status(403).json({ error: 'Data guru tidak ditemukan' });
+
+    if (!guru.mataPelajaran.includes(mapel)) {
+      return res.status(403).json({ error: `Anda hanya mengajar: ${guru.mataPelajaran.join(', ')}` });
+    }
+
+    const siswa = await prisma.siswa.findUnique({ where: { alamat: alamatSiswa } });
+    if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+    if (siswa.institusiId !== guru.institusiId) {
+      return res.status(403).json({ error: 'Siswa tidak berada di institusi Anda' });
+    }
+
     const timestamp = Math.floor(Date.now() / 1000);
     const idNilai = 'nilai_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-    
-    let predikat;
-    if (nilaiAngka >= 90) predikat = 'A';
-    else if (nilaiAngka >= 80) predikat = 'B';
-    else if (nilaiAngka >= 70) predikat = 'C';
-    else predikat = 'D';
+    let predikat = nilaiAngka >= 90 ? 'A' : nilaiAngka >= 80 ? 'B' : nilaiAngka >= 70 ? 'C' : 'D';
 
     const nilai = await prisma.nilai.create({
       data: { idNilai, alamatSiswa, mapel, nilaiAngka, predikat, timestamp }
@@ -136,22 +221,21 @@ app.post('/api/nilai', async (req, res) => {
   }
 });
 
-// 4. Lihat Data Siswa + Nilai (Publik)
+// ** LIHAT DATA SISWA + VERIFIKASI (Publik) **
 app.get('/api/siswa/:alamat', async (req, res) => {
   try {
-    const { alamat } = req.params;
+    const alamat = normalizeAddress(req.params.alamat);
     const siswa = await prisma.siswa.findUnique({
       where: { alamat },
-      include: { nilai: true }
+      include: { nilai: true, institusi: true }
     });
-
     if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
 
-    // Verifikasi on-chain (dengan try-catch agar tidak error)
+    // Verifikasi data siswa
+    const dataSiswaString = `${siswa.alamat}:${siswa.nis}:${siswa.nama}:${siswa.institusiId}`;
+    const hashSiswaOffchain = hashData(dataSiswaString);
     let isValidSiswa = false;
     try {
-      const dataSiswaString = `${siswa.alamat}:${siswa.nis}:${siswa.nama}`;
-      const hashSiswaOffchain = hashData(dataSiswaString);
       isValidSiswa = await contract.verifikasiHashSiswa(alamat, hashSiswaOffchain);
     } catch (e) {
       console.warn('Verifikasi siswa on-chain gagal:', e.message);
@@ -166,14 +250,7 @@ app.get('/api/siswa/:alamat', async (req, res) => {
       } catch (e) {
         console.warn('Verifikasi nilai on-chain gagal:', e.message);
       }
-      return {
-        idNilai: n.idNilai,
-        mapel: n.mapel,
-        nilaiAngka: n.nilaiAngka,
-        predikat: n.predikat,
-        timestamp: n.timestamp,
-        isValid: isValidNilai
-      };
+      return { ...n, isValid: isValidNilai };
     }));
 
     res.json({
@@ -181,7 +258,7 @@ app.get('/api/siswa/:alamat', async (req, res) => {
         alamat: siswa.alamat,
         nis: siswa.nis,
         nama: siswa.nama,
-        aktif: siswa.aktif,
+        institusi: siswa.institusi.nama,
         isValid: isValidSiswa
       },
       nilai: nilaiDenganVerifikasi
