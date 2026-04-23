@@ -46,7 +46,13 @@
         <input type="text" id="siswaNama" placeholder="Nama lengkap">
         <input type="number" id="siswaInstitusiId" placeholder="ID Institusi">
         <button id="tambahSiswaBtn" style="background:#05434e; color:white;">Tambah Siswa</button>
+
+        <h3> Status Siswa</h3>
+        <input type="text" id="alamatSiswaStatus" placeholder="Alamat wallet siswa">
+        <button id="nonaktifkanSiswaBtn" style="background:#e73636; color:white;"> Nonaktifkan Siswa</button>
+        <button id="aktifkanSiswaBtn" style="background:#5adb49; color:rgb(5, 5, 5);"> Aktifkan Kembali</button>
     </div>
+
 
     <!-- Guru Section -->
     <div class="section">
@@ -62,7 +68,7 @@
     <div class="section">
         <h2> DATA SISWA SMA </h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
-        <button id="cariBtn" style="background:#e73636; color:white;">Cari & Verifikasi</button>
+        <button id="cariBtn" style="background:#36bee7; color:white;">Cari Siswa</button>
         <pre id="hasilCari"></pre>
     </div>
 
@@ -198,6 +204,29 @@
             }
         });
 
+        // ADMIN - STATUS SISWA
+        document.getElementById('nonaktifkanSiswaBtn').addEventListener('click', async () => {
+            const alamat = document.getElementById('alamatSiswaStatus').value.trim();
+            if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
+            try {
+                const res = await apiCall('PATCH', `/api/siswa/${alamat}/soft-delete`);
+                alert(`✅ Siswa dinonaktifkan. Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
+        document.getElementById('aktifkanSiswaBtn').addEventListener('click', async () => {
+            const alamat = document.getElementById('alamatSiswaStatus').value.trim();
+            if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
+            try {
+                const res = await apiCall('PATCH', `/api/siswa/${alamat}/aktifkan`);
+                alert(`✅ Siswa diaktifkan kembali. Tx: ${res.txHash}`);
+            } catch (err) {
+                alert('❌ Gagal: ' + err.message);
+            }
+        });
+
         // GURU - INPUT NILAI
         document.getElementById('inputNilaiBtn').addEventListener('click', async () => {
             const alamatSiswa = document.getElementById('nilaiSiswaAddr').value.trim();
@@ -245,7 +274,7 @@
                 }
                 document.getElementById('hasilCari').innerText = output;
             } catch (err) {
-                alert('❌ Gagal: ' + err.message);
+                alert(' Gagal: ' + err.message);
             }
         });
     </script>
