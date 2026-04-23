@@ -44,7 +44,6 @@ contract SekolahHybrid {
     function simpanHashSiswa(address _alamatSiswa, bytes32 _hashData) external onlyAdmin {
         require(_alamatSiswa != address(0), "Alamat kosong");
         hashSiswa[_alamatSiswa] = _hashData;
-        siswaAktif[_alamatSiswa] = true;
         emit SiswaHashDisimpan(_alamatSiswa, _hashData);
     }
 

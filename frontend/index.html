@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sekolah Hybrid - Lengkap</title>
+    <title>Sekolah SMA JOSEON</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: Arial; max-width: 900px; margin: 20px auto; padding: 0 20px; }
@@ -47,11 +47,12 @@
         <input type="number" id="siswaInstitusiId" placeholder="ID Institusi">
         <button id="tambahSiswaBtn" style="background:#05434e; color:white;">Tambah Siswa</button>
 
-        <h3>Kelola Status Siswa</h3>
+        <h3> Status Siswa</h3>
         <input type="text" id="alamatSiswaStatus" placeholder="Alamat wallet siswa">
-        <button id="nonaktifkanSiswaBtn">🚫 Nonaktifkan Siswa</button>
-        <button id="aktifkanSiswaBtn">✅ Aktifkan Kembali</button>
-        </div>
+        <button id="nonaktifkanSiswaBtn" style="background:#e73636; color:white;"> Nonaktifkan Siswa</button>
+        <button id="aktifkanSiswaBtn" style="background:#5adb49; color:rgb(5, 5, 5);"> Aktifkan Kembali</button>
+    </div>
+
 
     <!-- Guru Section -->
     <div class="section">
@@ -67,7 +68,7 @@
     <div class="section">
         <h2> DATA SISWA SMA </h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
-        <button id="cariBtn" style="background:#e73636; color:white;">Cari & Verifikasi</button>
+        <button id="cariBtn" style="background:#36bee7; color:white;">Cari Siswa</button>
         <pre id="hasilCari"></pre>
     </div>
 
@@ -75,7 +76,7 @@
         const API_URL = 'http://localhost:3001';
         let account = null;
 
-        //  HELPER FUNCTIONS 
+        // ========== HELPER FUNCTIONS ==========
         function capitalizeWords(str) {
             return str.replace(/\b\w/g, char => char.toUpperCase());
         }
@@ -203,7 +204,7 @@
             }
         });
 
-        // ADMIN - NONAKTIFKAN SISWA
+        // ADMIN - STATUS SISWA
         document.getElementById('nonaktifkanSiswaBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('alamatSiswaStatus').value.trim();
             if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
@@ -215,7 +216,6 @@
             }
         });
 
-        // ADMIN - AKTIFKAN KEMBALI SISWA
         document.getElementById('aktifkanSiswaBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('alamatSiswaStatus').value.trim();
             if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
@@ -261,6 +261,7 @@
                 output += `NIS       : ${res.siswa.nis}\n`;
                 output += `Sekolah   : ${res.siswa.institusi || '-'}\n`;
                 output += `Alamat    : ${res.siswa.alamat}\n`;
+                //output += `Status    : ${res.siswa.isAktif ? 'Aktif' : 'Nonaktif'}\n`;
                 output += ` Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
                 output += ` DAFTAR NILAI  ${res.siswa.nama}\n`;
                 if (res.nilai.length === 0) {
@@ -273,7 +274,7 @@
                 }
                 document.getElementById('hasilCari').innerText = output;
             } catch (err) {
-                alert('❌ Gagal: ' + err.message);
+                alert(' Gagal: ' + err.message);
             }
         });
     </script>
