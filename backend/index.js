@@ -267,6 +267,54 @@ app.post('/api/nilai', async (req, res) => {
   }
 });
 
+app.patch('/api/siswa/:alamat/soft-delete', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
+
+    const alamat = normalizeAddress(req.params.alamat);
+    
+    // Update off-chain: set aktif = false
+    const siswa = await prisma.siswa.update({
+      where: { alamat },
+      data: { aktif: false }
+    });
+
+    // Update on-chain
+    const signer = getSigner();
+    const contractWithSigner = contract.connect(signer);
+    const tx = await contractWithSigner.softDeleteSiswa(alamat);
+    await tx.wait();
+
+    res.json({ success: true, siswa, txHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/siswa/:alamat/aktifkan', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
+
+    const alamat = normalizeAddress(req.params.alamat);
+    
+    const siswa = await prisma.siswa.update({
+      where: { alamat },
+      data: { aktif: true }
+    });
+
+    const signer = getSigner();
+    const contractWithSigner = contract.connect(signer);
+    const tx = await contractWithSigner.aktifkanSiswa(alamat);
+    await tx.wait();
+
+    res.json({ success: true, siswa, txHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // LIHAT DATA SISWA
 app.get('/api/siswa/:alamat', async (req, res) => {
   try {
