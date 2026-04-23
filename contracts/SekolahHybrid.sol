@@ -7,6 +7,7 @@ contract SekolahHybrid {
     mapping(address => bool) public isGuru;
     mapping(address => bytes32) public hashSiswa;
     mapping(bytes32 => bool) public hashNilaiTersimpan;
+    mapping(address => bool) public siswaAktif;
 
     mapping(uint256 => bytes32) public hashInstitusi; 
     mapping(address => bytes32) public hashGuru;      
@@ -17,6 +18,7 @@ contract SekolahHybrid {
     event NilaiHashDisimpan(bytes32 indexed idNilai, address indexed siswa);
     event InstitusiDitambahkan(uint256 indexed id, bytes32 hashData);
     event GuruHashDisimpan(address indexed guru, bytes32 hashData);
+    event StatusSiswaDiubah(address indexed siswa, bool aktif);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Hanya admin");
@@ -42,7 +44,26 @@ contract SekolahHybrid {
     function simpanHashSiswa(address _alamatSiswa, bytes32 _hashData) external onlyAdmin {
         require(_alamatSiswa != address(0), "Alamat kosong");
         hashSiswa[_alamatSiswa] = _hashData;
+        siswaAktif[_alamatSiswa] = true;
         emit SiswaHashDisimpan(_alamatSiswa, _hashData);
+    }
+
+    function softDeleteSiswa(address _alamatSiswa) external onlyAdmin {
+        require(hashSiswa[_alamatSiswa] != 0, "Siswa tidak terdaftar");
+        require(siswaAktif[_alamatSiswa], "Siswa sudah nonaktif");
+        siswaAktif[_alamatSiswa] = false;
+        emit StatusSiswaDiubah(_alamatSiswa, false);
+    }
+
+    function aktifkanSiswa(address _alamatSiswa) external onlyAdmin {
+        require(hashSiswa[_alamatSiswa] != 0, "Siswa tidak terdaftar");
+        require(!siswaAktif[_alamatSiswa], "Siswa sudah aktif");
+        siswaAktif[_alamatSiswa] = true;
+        emit StatusSiswaDiubah(_alamatSiswa, true);
+    }
+
+    function isSiswaAktif(address _alamatSiswa) external view returns (bool) {
+        return siswaAktif[_alamatSiswa];
     }
 
     function simpanHashNilai(bytes32 _idNilai, address _alamatSiswa) external onlyGuru {
