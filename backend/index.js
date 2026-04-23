@@ -14,13 +14,17 @@ app.use(express.json());
 
 const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
 
-const CONTRACT_ADDRESS = '0x0165878A594ca255338adfa4d48449f69242Eb8F';
+const CONTRACT_ADDRESS = '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
 
 const CONTRACT_ABI = [
   "function admin() view returns (address)",
   "function isGuru(address) view returns (bool)",
   "function tambahGuru(address) external",
   "function simpanHashSiswa(address, bytes32) external",
+  "function simpanHashGuru(address, string, string, uint256, string) external",
+  "function softDeleteSiswa(address _alamatSiswa) external",
+  "function aktifkanSiswa(address _alamatSiswa) external",
+  "function isSiswaAktif(address _alamatSiswa) external view returns (bool)",
   "function simpanHashNilai(bytes32, address) external",
   "function verifikasiHashSiswa(address, bytes32) view returns (bool)",
   "function verifikasiHashNilai(bytes32) view returns (bool)",
@@ -32,7 +36,8 @@ const CONTRACT_ABI = [
   "event GuruHashDisimpan(address indexed guru, bytes32 hashData)",
   "event GuruDitambahkan(address indexed guru)",
   "event SiswaHashDisimpan(address indexed siswa, bytes32 hashData)",
-  "event NilaiHashDisimpan(bytes32 indexed idNilai, address indexed siswa)"
+  "event NilaiHashDisimpan(bytes32 indexed idNilai, address indexed siswa)",
+  "event StatusSiswaDiubah(address indexed siswa, bool aktif)"
 ];
 
 const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
@@ -164,6 +169,54 @@ app.post('/api/siswa', async (req, res) => {
   }
 });
 
+// SOFT DELETE SISWA
+app.patch('/api/siswa/:alamat/soft-delete', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
+
+    const alamat = normalizeAddress(req.params.alamat);
+    
+    const siswa = await prisma.siswa.update({
+      where: { alamat },
+      data: { aktif: false }
+    });
+
+    const signer = getSigner();
+    const contractWithSigner = contract.connect(signer);
+    const tx = await contractWithSigner.softDeleteSiswa(alamat);
+    await tx.wait();
+
+    res.json({ success: true, siswa, txHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// AKTIFKAN SISWA
+app.patch('/api/siswa/:alamat/aktifkan', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
+
+    const alamat = normalizeAddress(req.params.alamat);
+    
+    const siswa = await prisma.siswa.update({
+      where: { alamat },
+      data: { aktif: true }
+    });
+
+    const signer = getSigner();
+    const contractWithSigner = contract.connect(signer);
+    const tx = await contractWithSigner.aktifkanSiswa(alamat);
+    await tx.wait();
+
+    res.json({ success: true, siswa, txHash: tx.hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 //  NILAI 
 app.post('/api/nilai', async (req, res) => {
   try {
@@ -223,6 +276,7 @@ app.get('/api/siswa/:alamat', async (req, res) => {
       include: { nilai: true, institusi: true }
     });
     if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+    if (!siswa.aktif)  return res.status(404).json({ error: 'Siswa tidak aktif' });
     const dataSiswaString = `${siswa.alamat}:${siswa.nis}:${siswa.nama}:${siswa.institusiId}`;
     const hashSiswaOffchain = hashData(dataSiswaString);
     let isValidSiswa = false;
