@@ -6,87 +6,197 @@
     <title>Sekolah SMA JOSEON</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial; max-width: 900px; margin: 20px auto; padding: 0 20px; }
-        button { margin: 5px; padding: 8px 16px; cursor: pointer; }
-        input { margin: 5px; padding: 6px; width: 350px; }
-        pre { background: #f7f3f3; padding: 10px; border-radius: 5px; overflow-x: auto; }
-        .section { border: 1px solid #070707; padding: 15px; margin: 15px 0; border-radius: 8px; }
-        .inline { display: flex; align-items: center; gap: 10px; }
+        body {
+            font-family: Arial;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background: #f8f9fa;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        input, select {
+            margin: 5px;
+            padding: 8px;
+            width: 280px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        pre {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .section {
+            border: 1px solid #ddd;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e2b37;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        .navbar .brand {
+            font-size: 1.6em;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .navbar .user-area {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .navbar .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .navbar .user-name {
+            font-size: 0.9em;
+            text-transform: uppercase;
+
+            color: white;
+        }
+        .navbar .user-role {
+            background: #0ba1b8;
+            padding: 4px 12px ;
+            border-radius: 20px;
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+        }
+        .navbar button {
+            background: #e74c3c;
+            color: white;
+        }
+        .navbar button.connect {
+            background: #0ba1b8;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .role-admin, .role-guru, .role-siswa {
+            transition: all 0.2s;
+        }
+        h2 {
+            color: #1e2b37;
+            border-bottom: 2px solid #0ba1b8;
+            padding-bottom: 8px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-    <h1>🏫 Sistem Verifikasi Nilai Rapor Berbasis Blockchain</h1>
-    
-    <div class="inline">
-        <button id="connectBtn" style="background:#0ba1b8; color:white;">🔗 Hubungkan MetaMask</button>
-        <button id="disconnectBtn" style="background:#05434e; color:white;">⛓️ Putuskan Wallet</button>
-        <span id="accountDisplay">Belum terhubung</span>
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <div class="brand">SEKOLAH BLOCKCHAIN JOSEON</div>
+        <div class="user-area">
+            <div class="user-info" id="userInfoDisplay">
+                <span class="user-name" id="navbarUserName">Tamu</span>
+                <span class="user-role" id="navbarUserRole">PUBLIK</span>
+            </div>
+            <button id="connectNavBtn" class="connect">Hubungkan MetaMask</button>
+            <button id="disconnectNavBtn" style="background:#05434e;">Putuskan Wallet</button>
+        </div>
     </div>
 
-    <!-- Admin Section -->
-    <div class="section">
-        <h2> ADMIN</h2>
-        
-        <h3> Tambah Sekolah</h3>
-        <input type="text" id="namaInstitusi" placeholder="Nama Institusi">
-        <input type="text" id="alamatInstitusi" placeholder="Alamat (opsional)">
-        <button id="tambahInstitusiBtn" style="background:#05434e; color:white;">Tambah Institusi</button>
+    <!-- ADMIN -->
+    <div id="adminPanel" class="role-admin hidden">
+        <div class="section">
+            <h2>ADMIN</h2>
+            
+            <h3>Tambah Sekolah</h3>
+            <input type="text" id="namaInstitusi" placeholder="Nama Institusi">
+            <input type="text" id="alamatInstitusi" placeholder="Alamat (opsional)">
+            <button id="tambahInstitusiBtn" style="background:#05434e; color:white;">Tambah Institusi</button>
 
-        <h3> Tambah Guru </h3>
-        <input type="text" id="guruAddrFull" placeholder="Alamat Wallet Guru (0x...)">
-        <input type="text" id="guruNIP" placeholder="NIP">
-        <input type="text" id="guruNama" placeholder="Nama Lengkap">
-        <input type="number" id="guruInstitusiId" placeholder="ID Institusi">
-        <input type="text" id="guruMapel" placeholder="Mata Pelajaran ">
-        <button id="tambahGuruFullBtn" style="background:#05434e; color:white;">Tambah Guru</button>
+            <h3>Tambah Guru</h3>
+            <input type="text" id="guruAddrFull" placeholder="Alamat Wallet Guru (0x...)">
+            <input type="text" id="guruNIP" placeholder="NIP">
+            <input type="text" id="guruNama" placeholder="Nama Lengkap">
+            <input type="number" id="guruInstitusiId" placeholder="ID Institusi">
+            <input type="text" id="guruMapel" placeholder="Mata Pelajaran (pisahkan koma)">
+            <button id="tambahGuruFullBtn" style="background:#05434e; color:white;">Tambah Guru</button>
 
-        <h3> Tambah Siswa</h3>
-        <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa">
-        <input type="text" id="siswaNIS" placeholder="NIS">
-        <input type="text" id="siswaNama" placeholder="Nama lengkap">
-        <input type="number" id="siswaInstitusiId" placeholder="ID Institusi">
-        <button id="tambahSiswaBtn" style="background:#05434e; color:white;">Tambah Siswa</button>
+            <h3>Tambah Siswa</h3>
+            <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa">
+            <input type="text" id="siswaNIS" placeholder="NIS">
+            <input type="text" id="siswaNama" placeholder="Nama lengkap">
+            <input type="number" id="siswaInstitusiId" placeholder="ID Institusi">
+            <button id="tambahSiswaBtn" style="background:#05434e; color:white;">Tambah Siswa</button>
 
-        <h3> Status Siswa</h3>
-        <input type="text" id="alamatSiswaStatus" placeholder="Alamat wallet siswa">
-        <button id="nonaktifkanSiswaBtn" style="background:#e73636; color:white;"> Nonaktifkan Siswa</button>
-        <button id="aktifkanSiswaBtn" style="background:#5adb49; color:rgb(5, 5, 5);"> Aktifkan Kembali</button>
+            <h3>Status Siswa</h3>
+            <input type="text" id="alamatSiswaStatus" placeholder="Alamat wallet siswa">
+            <button id="nonaktifkanSiswaBtn" style="background:#e73636; color:white;">Nonaktifkan Siswa</button>
+            <button id="aktifkanSiswaBtn" style="background:#5adb49; color:black;">Aktifkan Kembali</button>
+        </div>
     </div>
 
-
-    <!-- Guru Section -->
-    <div class="section">
-        <h2> GURU</h2>
-        <h3> Input Nilai</h3>
-        <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa">
-        <input type="text" id="mapel" placeholder="Mata Pelajaran">
-        <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100">
-        <button id="inputNilaiBtn" style="background:#05434e; color:white;">Input Nilai</button>
+    <!-- GURU SECTIONS (hanya tampil jika role = guru atau admin) -->
+    <div id="guruPanel" class="role-guru hidden">
+        <div class="section">
+            <h2>GURU</h2>
+            <h3>Input Nilai</h3>
+            <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa">
+            <input type="text" id="mapel" placeholder="Mata Pelajaran">
+            <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100">
+            <button id="inputNilaiBtn" style="background:#05434e; color:white;">Input Nilai</button>
+        </div>
     </div>
 
-    <!-- Public Section -->
+    <!-- PUBLIC -->
     <div class="section">
-        <h2> DATA SISWA SMA </h2>
+        <h2>Publik Melihat Data</h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
         <button id="cariBtn" style="background:#36bee7; color:white;">Cari Siswa</button>
+        <button id="lihatInstitusiBtn" style="background:#0ba1b8; color:white;">Lihat Daftar Institusi</button>
         <pre id="hasilCari"></pre>
+        <pre id="hasilDataPublik"></pre>
     </div>
 
     <script>
         const API_URL = 'http://localhost:3001';
         let account = null;
+        let currentUser = { role: 'public', nama: 'Tamu' };
 
         // ========== HELPER FUNCTIONS ==========
         function capitalizeWords(str) {
             return str.replace(/\b\w/g, char => char.toUpperCase());
         }
 
-        // Validasi alamat Ethereum
         function isValidEthereumAddress(address) {
             return /^0x[a-fA-F0-9]{40}$/.test(address);
         }
 
-        // Mapel auto-capitalize
+        // Auto-capitalize mapel
         document.getElementById('mapel').addEventListener('input', function() {
             this.value = capitalizeWords(this.value);
         });
@@ -96,16 +206,62 @@
             this.value = parts.join(', ');
         });
 
-        // WALLET CONNECTION 
+        // ========== UI ROLE MANAGEMENT ==========
+        function updateUIForRole() {
+            const adminPanel = document.getElementById('adminPanel');
+            const guruPanel = document.getElementById('guruPanel');
+
+            // Reset
+            adminPanel.classList.add('hidden');
+            guruPanel.classList.add('hidden');
+
+            if (currentUser.role === 'admin') {
+                adminPanel.classList.remove('hidden');
+                guruPanel.classList.remove('hidden'); // admin juga bisa akses fitur guru
+            } else if (currentUser.role === 'guru') {
+                guruPanel.classList.remove('hidden');
+            }
+
+            // Update navbar
+            document.getElementById('navbarUserName').innerText = currentUser.nama || 'Tamu';
+            document.getElementById('navbarUserRole').innerText = currentUser.role.toUpperCase();
+            
+            // Tombol connect/disconnect
+            if (account) {
+                document.getElementById('connectNavBtn').classList.add('hidden');
+                document.getElementById('disconnectNavBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('connectNavBtn').classList.remove('hidden');
+                document.getElementById('disconnectNavBtn').classList.add('hidden');
+                document.getElementById('navbarUserName').innerText = 'Tamu';
+                document.getElementById('navbarUserRole').innerText = 'PUBLIK';
+            }
+        }
+
+        // ========== FETCH PROFILE DARI BACKEND ==========
+        async function fetchProfile() {
+            if (!account) return;
+            try {
+                const res = await apiCall('GET', '/api/profile');
+                currentUser = res;
+            } catch (err) {
+                console.warn('Gagal ambil profil, dianggap publik:', err.message);
+                currentUser = { role: 'public', nama: 'Tamu' };
+            } finally {
+                updateUIForRole();
+            }
+        }
+
+        // ========== WALLET CONNECTION ==========
         async function connectWallet() {
             if (!window.ethereum) return alert('MetaMask tidak terdeteksi!');
             try {
                 const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
                 account = accounts[0];
-                document.getElementById('accountDisplay').innerText = `👤 ${account}`;
+                await fetchProfile(); // ambil role & nama
                 const chainId = await ethereum.request({ method: 'eth_chainId' });
                 if (chainId !== '0x539') {
-                    alert('Harap ganti jaringan ke Hardhat Local (Chain ID 1337)');
+                    console.warn('Jaringan bukan Hardhat Local (1337)');
                 }
             } catch (err) {
                 alert('Gagal konek: ' + err.message);
@@ -113,21 +269,19 @@
         }
 
         function disconnectWallet() {
-    
-        account = null;
-        document.getElementById('accountDisplay').innerText = 'Belum terhubung';
-
-        if (window.ethereum && window.ethereum.removeAllListeners) {
-            window.ethereum.removeAllListeners();
-        }
-  
-            alert('✅ Status wallet telah direset di aplikasi.\n Untuk memutus koneksi sepenuhnya, buka MetaMask -> Settings -> Connected Sites -> Putuskan situs ini.');
+            account = null;
+            currentUser = { role: 'public', nama: 'Tamu' };
+            updateUIForRole();
+            if (window.ethereum && window.ethereum.removeAllListeners) {
+                window.ethereum.removeAllListeners();
+            }
+            alert('Status wallet telah direset di aplikasi.\nUntuk memutus koneksi sepenuhnya, buka MetaMask -> Settings -> Connected Sites -> Putuskan situs ini.');
         }
 
-        document.getElementById('connectBtn').addEventListener('click', connectWallet);
-        document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+        document.getElementById('connectNavBtn').addEventListener('click', connectWallet);
+        document.getElementById('disconnectNavBtn').addEventListener('click', disconnectWallet);
 
-        // API CALL 
+        // ========== API CALL (dengan header x-user-address) ==========
         async function apiCall(method, endpoint, data = null) {
             const options = {
                 method,
@@ -143,76 +297,55 @@
             return result;
         }
 
-        // ADMIN - INSTITUSI 
+        // ========== ADMIN FUNCTIONS ==========
         document.getElementById('tambahInstitusiBtn').addEventListener('click', async () => {
             const nama = document.getElementById('namaInstitusi').value.trim();
             const alamat = document.getElementById('alamatInstitusi').value.trim();
             if (!nama) return alert('Nama institusi wajib diisi');
             try {
                 const res = await apiCall('POST', '/api/institusi', { nama, alamat });
-                alert(`✅ Institusi ditambahkan! ID: ${res.institusiId}, Tx: ${res.txHash}`);
-            } catch (err) {
-                alert('❌ Gagal: ' + err.message);
-            }
+                alert(`Institusi ditambahkan! ID: ${res.institusiId}, Tx: ${res.txHash}`);
+            } catch (err) { alert('Gagal: ' + err.message); }
         });
 
-        // ADMIN - GURU LENGKAP 
         document.getElementById('tambahGuruFullBtn').addEventListener('click', async () => {
             const alamatWallet = document.getElementById('guruAddrFull').value.trim();
             const nip = document.getElementById('guruNIP').value.trim();
             const nama = document.getElementById('guruNama').value.trim();
             const institusiId = parseInt(document.getElementById('guruInstitusiId').value);
             const mapelRaw = document.getElementById('guruMapel').value.trim();
-            
-            if (!alamatWallet || !nip || !nama || !institusiId || !mapelRaw) {
-                return alert('Lengkapi semua field');
-            }
-            if (!isValidEthereumAddress(alamatWallet)) {
-                return alert('Alamat wallet tidak valid! Gunakan format 0x diikuti 40 karakter heksa.');
-            }
-            
+            if (!alamatWallet || !nip || !nama || !institusiId || !mapelRaw) return alert('Lengkapi semua field');
+            if (!isValidEthereumAddress(alamatWallet)) return alert('Alamat wallet tidak valid!');
             const mapel = mapelRaw.split(',').map(m => m.trim()).filter(m => m !== '');
             if (mapel.length === 0) return alert('Minimal satu mata pelajaran');
-            
             try {
-                const res = await apiCall('POST', '/api/guru-lengkap', {
-                    alamatWallet, nip, nama, institusiId, mapel
-                });
-                alert(`✅ Guru ditambahkan! Tx: ${res.txHash}`);
-            } catch (err) {
-                alert('❌ Gagal: ' + err.message);
-            }
+                const res = await apiCall('POST', '/api/guru-lengkap', { alamatWallet, nip, nama, institusiId, mapel });
+                alert(`Guru ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) { alert('Gagal: ' + err.message); }
         });
 
-        // ADMIN - TAMBAH SISWA 
         document.getElementById('tambahSiswaBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('siswaAddr').value.trim();
             const nis = document.getElementById('siswaNIS').value.trim();
             const nama = document.getElementById('siswaNama').value.trim();
             const institusiId = parseInt(document.getElementById('siswaInstitusiId').value);
-            
             if (!alamat || !nis || !nama || !institusiId) return alert('Lengkapi semua field');
-            if (!isValidEthereumAddress(alamat)) {
-                return alert('Alamat wallet siswa tidak valid!');
-            }
-            
+            if (!isValidEthereumAddress(alamat)) return alert('Alamat wallet siswa tidak valid!');
             try {
                 const res = await apiCall('POST', '/api/siswa', { alamat, nis, nama, institusiId });
-                alert(`✅ Siswa ditambahkan! Tx: ${res.txHash}`);
-            } catch (err) {
-                alert('❌ Gagal: ' + err.message);
-            }
+                alert(`Siswa ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) { alert('Gagal: ' + err.message); }
         });
 
-        // ADMIN - STATUS SISWA
         document.getElementById('nonaktifkanSiswaBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('alamatSiswaStatus').value.trim();
             if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
             try {
                 const res = await apiCall('PATCH', `/api/siswa/${alamat}/soft-delete`);
-                alert(`✅ Siswa dinonaktifkan. Tx: ${res.txHash}`);
+                alert(`Siswa dinonaktifkan. Tx: ${res.txHash}`);
             } catch (err) {
-                alert('❌ Gagal: ' + err.message);
+                if (err.message.includes('sudah nonaktif')) alert('Siswa sudah nonaktif.');
+                else alert('Gagal: ' + err.message);
             }
         });
 
@@ -221,39 +354,34 @@
             if (!isValidEthereumAddress(alamat)) return alert('Alamat tidak valid');
             try {
                 const res = await apiCall('PATCH', `/api/siswa/${alamat}/aktifkan`);
-                alert(`✅ Siswa diaktifkan kembali. Tx: ${res.txHash}`);
+                alert(`Siswa diaktifkan kembali. Tx: ${res.txHash}`);
             } catch (err) {
-                alert('❌ Gagal: ' + err.message);
+                if (err.message.includes('sudah aktif')) alert('Siswa sudah aktif.');
+                else alert('Gagal: ' + err.message);
             }
         });
 
-        // GURU - INPUT NILAI
+        // ========== GURU FUNCTIONS ==========
         document.getElementById('inputNilaiBtn').addEventListener('click', async () => {
             const alamatSiswa = document.getElementById('nilaiSiswaAddr').value.trim();
             const mapel = document.getElementById('mapel').value.trim();
             const nilaiAngka = parseInt(document.getElementById('nilaiAngka').value);
-            
             if (!alamatSiswa || !mapel || isNaN(nilaiAngka)) return alert('Lengkapi semua field');
             if (nilaiAngka < 0 || nilaiAngka > 100) return alert('Nilai harus 0-100');
-            if (!isValidEthereumAddress(alamatSiswa)) {
-                return alert('Alamat siswa tidak valid!');
-            }
-            
+            if (!isValidEthereumAddress(alamatSiswa)) return alert('Alamat siswa tidak valid!');
             try {
                 const res = await apiCall('POST', '/api/nilai', { alamatSiswa, mapel, nilaiAngka });
-                alert(`✅ Nilai ditambahkan! Tx: ${res.txHash}`);
-            } catch (err) {
-                alert('❌ Gagal: ' + err.message);
-            }
+                alert(`Nilai ditambahkan! Tx: ${res.txHash}`);
+            } catch (err) { alert('Gagal: ' + err.message); }
         });
 
-        // PUBLIK - CARI SISWA
+        // ========== PUBLIC FUNCTIONS ==========
         document.getElementById('cariBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('cariAlamat').value.trim();
             if (!alamat) return alert('Masukkan alamat siswa');
-            if (!isValidEthereumAddress(alamat)) {
-                return alert('Format alamat tidak valid!');
-            }
+            if (!isValidEthereumAddress(alamat)) return alert('Format alamat tidak valid!');
+            const hasilElem = document.getElementById('hasilCari');
+            hasilElem.innerText = 'Memuat data...';
             try {
                 const res = await apiCall('GET', `/api/siswa/${alamat}`);
                 let output = `DATA SISWA JOSEON cabang KONOHA\n`;
@@ -261,22 +389,35 @@
                 output += `NIS       : ${res.siswa.nis}\n`;
                 output += `Sekolah   : ${res.siswa.institusi || '-'}\n`;
                 output += `Alamat    : ${res.siswa.alamat}\n`;
-                //output += `Status    : ${res.siswa.isAktif ? 'Aktif' : 'Nonaktif'}\n`;
-                output += ` Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
-                output += ` DAFTAR NILAI  ${res.siswa.nama}\n`;
+                output += `Verifikasi On-Chain: ${res.siswa.isValid ? 'COCOK' : 'TIDAK COCOK'}\n\n`;
+                output += `DAFTAR NILAI ${res.siswa.nama}\n`;
                 if (res.nilai.length === 0) {
                     output += '(Belum ada nilai)\n';
                 } else {
                     res.nilai.forEach((n, i) => {
                         output += `${i+1}. ${n.mapel} : ${n.nilaiAngka} (${n.predikat}) - ${new Date(n.timestamp*1000).toLocaleString()}\n`;
-                        output += `    Verifikasi: ${n.isValid ? '✅' : '❌'}\n`;
+                        output += `   Verifikasi: ${n.isValid ? '✅' : '❌'}\n`;
                     });
                 }
-                document.getElementById('hasilCari').innerText = output;
+                hasilElem.innerText = output;
             } catch (err) {
-                alert(' Gagal: ' + err.message);
+                if (err.message.includes('tidak ditemukan')) hasilElem.innerText = 'Siswa tidak terdaftar.';
+                else if (err.message.includes('tidak aktif')) hasilElem.innerText = 'Siswa telah dinonaktifkan.';
+                else hasilElem.innerText = 'Gagal: ' + err.message;
             }
         });
+
+        document.getElementById('lihatInstitusiBtn').addEventListener('click', async () => {
+            try {
+                const res = await apiCall('GET', '/api/institusi');
+                let output = 'DAFTAR INSTITUSI\n';
+                res.forEach(i => output += `ID ${i.id}: ${i.nama} (${i.alamat || '-'})\n`);
+                document.getElementById('hasilDataPublik').innerText = output;
+            } catch (err) { alert('Gagal: ' + err.message); }
+        });
+
+        // Inisialisasi UI awal
+        updateUIForRole();
     </script>
 </body>
 </html>
