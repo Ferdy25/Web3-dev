@@ -18,16 +18,16 @@
     <h1>🏫 Sistem Verifikasi Nilai Rapor Berbasis Blockchain</h1>
     
     <div class="inline">
-        <button id="connectBtn" style="background:#0ba1b8; color:white;">🔌 Hubungkan MetaMask</button>
-        <button id="disconnectBtn" style="background:#05434e; color:white;">🔓 Putuskan Wallet</button>
+        <button id="connectBtn" style="background:#0ba1b8; color:white;">🔗 Hubungkan MetaMask</button>
+        <button id="disconnectBtn" style="background:#05434e; color:white;">⛓️ Putuskan Wallet</button>
         <span id="accountDisplay">Belum terhubung</span>
     </div>
 
     <!-- Admin Section -->
     <div class="section">
-        <h2>👑 Admin</h2>
+        <h2>🕵️‍♂️ ADMIN</h2>
         
-        <h3>🏛️ Tambah Sekolah</h3>
+        <h3>🏫 Tambah Sekolah</h3>
         <input type="text" id="namaInstitusi" placeholder="Nama Institusi">
         <input type="text" id="alamatInstitusi" placeholder="Alamat (opsional)">
         <button id="tambahInstitusiBtn" style="background:#05434e; color:white;">Tambah Institusi</button>
@@ -40,7 +40,7 @@
         <input type="text" id="guruMapel" placeholder="Mata Pelajaran ">
         <button id="tambahGuruFullBtn" style="background:#05434e; color:white;">Tambah Guru</button>
 
-        <h3>🧑‍🎓 Tambah Siswa</h3>
+        <h3>🤵‍♂️ Tambah Siswa</h3>
         <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa">
         <input type="text" id="siswaNIS" placeholder="NIS">
         <input type="text" id="siswaNama" placeholder="Nama lengkap">
@@ -60,7 +60,7 @@
 
     <!-- Public Section -->
     <div class="section">
-        <h2>🔍 Lihat Data Siswa (Publik)</h2>
+        <h2>🔍 Lihat Data Siswa </h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
         <button id="cariBtn" style="background:#e73636; color:white;">Cari & Verifikasi</button>
         <pre id="hasilCari"></pre>
@@ -90,7 +90,7 @@
             this.value = parts.join(', ');
         });
 
-        // ========== WALLET CONNECTION ==========
+        // WALLET CONNECTION 
         async function connectWallet() {
             if (!window.ethereum) return alert('MetaMask tidak terdeteksi!');
             try {
@@ -121,7 +121,7 @@
         document.getElementById('connectBtn').addEventListener('click', connectWallet);
         document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
 
-        // ========== API CALL ==========
+        // API CALL 
         async function apiCall(method, endpoint, data = null) {
             const options = {
                 method,
@@ -137,7 +137,7 @@
             return result;
         }
 
-        // ========== ADMIN: INSTITUSI ==========
+        // ADMIN - INSTITUSI 
         document.getElementById('tambahInstitusiBtn').addEventListener('click', async () => {
             const nama = document.getElementById('namaInstitusi').value.trim();
             const alamat = document.getElementById('alamatInstitusi').value.trim();
@@ -150,7 +150,7 @@
             }
         });
 
-        // ========== ADMIN: GURU LENGKAP ==========
+        // ADMIN - GURU LENGKAP 
         document.getElementById('tambahGuruFullBtn').addEventListener('click', async () => {
             const alamatWallet = document.getElementById('guruAddrFull').value.trim();
             const nip = document.getElementById('guruNIP').value.trim();
@@ -178,7 +178,7 @@
             }
         });
 
-        // ========== ADMIN: TAMBAH SISWA ==========
+        // ADMIN - TAMBAH SISWA 
         document.getElementById('tambahSiswaBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('siswaAddr').value.trim();
             const nis = document.getElementById('siswaNIS').value.trim();
@@ -198,7 +198,7 @@
             }
         });
 
-        // ========== GURU: INPUT NILAI ==========
+        // GURU - INPUT NILAI
         document.getElementById('inputNilaiBtn').addEventListener('click', async () => {
             const alamatSiswa = document.getElementById('nilaiSiswaAddr').value.trim();
             const mapel = document.getElementById('mapel').value.trim();
@@ -218,7 +218,7 @@
             }
         });
 
-        // ========== PUBLIK: CARI SISWA ==========
+        // PUBLIK - CARI SISWA
         document.getElementById('cariBtn').addEventListener('click', async () => {
             const alamat = document.getElementById('cariAlamat').value.trim();
             if (!alamat) return alert('Masukkan alamat siswa');

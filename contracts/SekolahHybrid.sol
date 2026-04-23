@@ -8,7 +8,6 @@ contract SekolahHybrid {
     mapping(address => bytes32) public hashSiswa;
     mapping(bytes32 => bool) public hashNilaiTersimpan;
 
-    // === FITUR BARU ===
     mapping(uint256 => bytes32) public hashInstitusi; // idInstitusi => hash(nama, alamat)
     mapping(address => bytes32) public hashGuru;      // alamat guru => hash(nip, nama, institusiId, mapel)
     uint256 public institusiCount;
@@ -34,7 +33,6 @@ contract SekolahHybrid {
         isGuru[admin] = true;
     }
 
-    // === FUNGSI LAMA ===
     function tambahGuru(address _guru) external onlyAdmin {
         require(_guru != address(0), "Alamat kosong");
         isGuru[_guru] = true;
@@ -62,7 +60,6 @@ contract SekolahHybrid {
         return hashNilaiTersimpan[_idNilai];
     }
 
-    // === FUNGSI BARU ===
     function tambahInstitusi(string memory _nama, string memory _alamat) external onlyAdmin returns (uint256) {
         institusiCount++;
         uint256 id = institusiCount;
