@@ -361,6 +361,49 @@ app.get('/api/siswa/:alamat', async (req, res) => {
   }
 });
 
+// PROFIL
+app.get('/api/profile', async (req, res) => {
+  try {
+    const userAddr = getUserAddress(req);
+    if (!userAddr) return res.status(401).json({ error: 'Tidak ada alamat wallet' });
+
+    const normalizedAddr = normalizeAddress(userAddr);
+    const isAdminUser = isAdmin(normalizedAddr);
+    
+    let role = 'siswa';
+    let nama = 'Pengguna';
+    
+    if (isAdminUser) {
+      role = 'admin';
+      nama = 'Administrator';
+    } else {
+      const guru = await prisma.guru.findUnique({
+        where: { alamat: normalizedAddr }
+      });
+      if (guru) {
+        role = 'guru';
+        nama = guru.nama;
+      } else {
+        const siswa = await prisma.siswa.findUnique({
+          where: { alamat: normalizedAddr }
+        });
+        if (siswa) {
+          role = 'siswa';
+          nama = siswa.nama;
+        }
+      }
+    }
+    
+    res.json({
+      alamat: normalizedAddr,
+      role,
+      nama
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend API berjalan di http://localhost:${PORT}`);
 });
