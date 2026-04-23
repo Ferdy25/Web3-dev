@@ -25,14 +25,14 @@
 
     <!-- Admin Section -->
     <div class="section">
-        <h2>🕵️‍♂️ ADMIN</h2>
+        <h2> ADMIN</h2>
         
-        <h3>🏫 Tambah Sekolah</h3>
+        <h3> Tambah Sekolah</h3>
         <input type="text" id="namaInstitusi" placeholder="Nama Institusi">
         <input type="text" id="alamatInstitusi" placeholder="Alamat (opsional)">
         <button id="tambahInstitusiBtn" style="background:#05434e; color:white;">Tambah Institusi</button>
 
-        <h3>👨‍🏫 Tambah Guru </h3>
+        <h3> Tambah Guru </h3>
         <input type="text" id="guruAddrFull" placeholder="Alamat Wallet Guru (0x...)">
         <input type="text" id="guruNIP" placeholder="NIP">
         <input type="text" id="guruNama" placeholder="Nama Lengkap">
@@ -40,7 +40,7 @@
         <input type="text" id="guruMapel" placeholder="Mata Pelajaran ">
         <button id="tambahGuruFullBtn" style="background:#05434e; color:white;">Tambah Guru</button>
 
-        <h3>🤵‍♂️ Tambah Siswa</h3>
+        <h3> Tambah Siswa</h3>
         <input type="text" id="siswaAddr" placeholder="Alamat wallet siswa">
         <input type="text" id="siswaNIS" placeholder="NIS">
         <input type="text" id="siswaNama" placeholder="Nama lengkap">
@@ -50,8 +50,8 @@
 
     <!-- Guru Section -->
     <div class="section">
-        <h2>👨‍🏫 Guru</h2>
-        <h3>📝 Input Nilai</h3>
+        <h2> GURU</h2>
+        <h3> Input Nilai</h3>
         <input type="text" id="nilaiSiswaAddr" placeholder="Alamat siswa">
         <input type="text" id="mapel" placeholder="Mata Pelajaran">
         <input type="number" id="nilaiAngka" placeholder="Nilai (0-100)" min="0" max="100">
@@ -60,7 +60,7 @@
 
     <!-- Public Section -->
     <div class="section">
-        <h2>🔍 Lihat Data Siswa </h2>
+        <h2> DATA SISWA SMA </h2>
         <input type="text" id="cariAlamat" placeholder="Masukkan alamat wallet siswa">
         <button id="cariBtn" style="background:#e73636; color:white;">Cari & Verifikasi</button>
         <pre id="hasilCari"></pre>
@@ -227,19 +227,19 @@
             }
             try {
                 const res = await apiCall('GET', `/api/siswa/${alamat}`);
-                let output = `=== DATA SISWA ===\n`;
-                output += `Alamat    : ${res.siswa.alamat}\n`;
-                output += `NIS       : ${res.siswa.nis}\n`;
+                let output = `DATA SISWA JOSEON cabang KONOHA\n`;
                 output += `Nama      : ${res.siswa.nama}\n`;
-                output += `Institusi : ${res.siswa.institusi || '-'}\n`;
-                output += `🔒 Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
-                output += `=== DAFTAR NILAI ===\n`;
+                output += `NIS       : ${res.siswa.nis}\n`;
+                output += `Sekolah   : ${res.siswa.institusi || '-'}\n`;
+                output += `Alamat    : ${res.siswa.alamat}\n`;
+                output += ` Verifikasi On-Chain: ${res.siswa.isValid ? '✅ COCOK' : '❌ TIDAK COCOK'}\n\n`;
+                output += ` DAFTAR NILAI  ${res.siswa.nama}\n`;
                 if (res.nilai.length === 0) {
                     output += '(Belum ada nilai)\n';
                 } else {
                     res.nilai.forEach((n, i) => {
                         output += `${i+1}. ${n.mapel} : ${n.nilaiAngka} (${n.predikat}) - ${new Date(n.timestamp*1000).toLocaleString()}\n`;
-                        output += `   🔒 Verifikasi: ${n.isValid ? '✅' : '❌'}\n`;
+                        output += `    Verifikasi: ${n.isValid ? '✅' : '❌'}\n`;
                     });
                 }
                 document.getElementById('hasilCari').innerText = output;

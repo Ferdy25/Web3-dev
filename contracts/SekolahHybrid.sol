@@ -8,8 +8,8 @@ contract SekolahHybrid {
     mapping(address => bytes32) public hashSiswa;
     mapping(bytes32 => bool) public hashNilaiTersimpan;
 
-    mapping(uint256 => bytes32) public hashInstitusi; // idInstitusi => hash(nama, alamat)
-    mapping(address => bytes32) public hashGuru;      // alamat guru => hash(nip, nama, institusiId, mapel)
+    mapping(uint256 => bytes32) public hashInstitusi; 
+    mapping(address => bytes32) public hashGuru;      
     uint256 public institusiCount;
 
     event GuruDitambahkan(address indexed guru);
