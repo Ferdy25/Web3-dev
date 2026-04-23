@@ -11,12 +11,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// ----- KONEKSI BLOCKCHAIN (ethers v5) -----
+
 const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
 
 const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
-// ABI LENGKAP (copy dari file JSON setelah compile kontrak baru)
 const CONTRACT_ABI = [
   "function admin() view returns (address)",
   "function isGuru(address) view returns (bool)",
@@ -38,19 +37,17 @@ const CONTRACT_ABI = [
 
 const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 
-// Signer (admin)
+
 const getSigner = () => {
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error('PRIVATE_KEY tidak di-set di .env');
   return new ethers.Wallet(privateKey, provider);
 };
 
-// Fungsi hash data
 const hashData = (dataString) => {
   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(dataString));
 };
 
-// Normalisasi alamat Ethereum (checksum)
 function normalizeAddress(addr) {
   try {
     return ethers.utils.getAddress(addr);
@@ -59,18 +56,18 @@ function normalizeAddress(addr) {
   }
 }
 
-// Ambil alamat user dari header
+
 const getUserAddress = (req) => req.headers['x-user-address'];
 
-// Cek apakah user adalah admin
+
 const isAdmin = (userAddr) => {
   if (!userAddr) return false;
   return userAddr.toLowerCase() === process.env.ADMIN_ADDRESS?.toLowerCase();
 };
 
-// ----- API ENDPOINTS -----
 
-// ** INSTITUSI **
+
+// INSTITUSI
 app.post('/api/institusi', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
@@ -103,27 +100,24 @@ app.get('/api/institusi', async (req, res) => {
   }
 });
 
-// ** GURU LENGKAP **
+// GURU LENGKAP
 app.post('/api/guru-lengkap', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
     if (!isAdmin(userAddr)) return res.status(403).json({ error: 'Hanya admin' });
 
     let { alamatWallet, nip, nama, institusiId, mapel } = req.body;
-    // Normalisasi alamat
     alamatWallet = normalizeAddress(alamatWallet);
 
     const guru = await prisma.guru.create({
       data: { alamat: alamatWallet, nip, nama, institusiId, mataPelajaran: mapel }
     });
 
-    // Gabungkan mapel menjadi string dengan koma
     const mapelStr = mapel.join(',');
     const dataString = `${nip}:${nama}:${institusiId}:${mapelStr}`;
     const hash = hashData(dataString);
     const signer = getSigner();
     const contractWithSigner = contract.connect(signer);
-    // Kirim mapelStr sebagai string, bukan array
     const tx = await contractWithSigner.simpanHashGuru(alamatWallet, nip, nama, institusiId, mapelStr);
     await tx.wait();
 
@@ -144,7 +138,7 @@ app.get('/api/guru/:alamat', async (req, res) => {
   }
 });
 
-// ** SISWA (dengan institusi) **
+// SISWA 
 app.post('/api/siswa', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
@@ -170,7 +164,7 @@ app.post('/api/siswa', async (req, res) => {
   }
 });
 
-// ** INPUT NILAI (dengan cek mapel & institusi) **
+//  NILAI 
 app.post('/api/nilai', async (req, res) => {
   try {
     const userAddr = getUserAddress(req);
@@ -184,7 +178,6 @@ app.post('/api/nilai', async (req, res) => {
     let { alamatSiswa, mapel, nilaiAngka } = req.body;
     alamatSiswa = normalizeAddress(alamatSiswa);
 
-    // Ambil data guru dari DB
     const guru = await prisma.guru.findFirst({
       where: { alamat: { equals: userAddr, mode: 'insensitive' } }
     });
@@ -221,7 +214,7 @@ app.post('/api/nilai', async (req, res) => {
   }
 });
 
-// ** LIHAT DATA SISWA + VERIFIKASI (Publik) **
+// LIHAT DATA SISWA
 app.get('/api/siswa/:alamat', async (req, res) => {
   try {
     const alamat = normalizeAddress(req.params.alamat);
@@ -230,8 +223,6 @@ app.get('/api/siswa/:alamat', async (req, res) => {
       include: { nilai: true, institusi: true }
     });
     if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
-
-    // Verifikasi data siswa
     const dataSiswaString = `${siswa.alamat}:${siswa.nis}:${siswa.nama}:${siswa.institusiId}`;
     const hashSiswaOffchain = hashData(dataSiswaString);
     let isValidSiswa = false;
